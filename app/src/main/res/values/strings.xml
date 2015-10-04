@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Birthday reminders</string>
+    <string name="list_title">Upcoming birthdays (30 days)</string>
+    <string name="no_events">No upcoming birthdays</string>
+
+    <string name="single_notification_title">Birthday</string>
+    <string name="single_notification_content_without_year">%1$s has a birthday in a week</string>
+    <string name="single_notification_content_with_year">%1$s will be %2$s year(s) old</string>
+
+    <string name="group_notification_title">Upcoming birthdays</string>
+    <string name="group_notification_content_without_year">%1$s has a birthday in a week</string>
+    <string name="group_notification_content_with_year">%1$s will be %2$s year(s) old</string>
+    <string name="group_notification_more_content">+%1$s more</string>
+</resources>
