@@ -72,45 +72,15 @@ public class ContactRepository {
             cursor.close();
         }
         return null;
-        /*
-        Cursor cursor = context.getContentResolver().query(
-                ContactsContract.Data.CONTENT_URI,
-                null,
-                ContactsContract.Data.CONTACT_ID + "=" + id + " AND "
-                        + ContactsContract.Data.MIMETYPE + "='"
-                        + ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE + "'", null,
-                null);
-        if (cursor != null) {
-            if (!cursor.moveToFirst()) {
-                return null;
-            }
-        } else {
-            return null;
-        }
-
-        Uri person = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, Long.parseLong(id));
-        return Uri.withAppendedPath(person, ContactsContract.Contacts.Photo.CONTENT_DIRECTORY);*/
     }
     public InputStream getContactPhotoStream(String id)
     {
-        Uri contactUri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, Long.parseLong(id));
-        Uri photoUri = Uri.withAppendedPath(contactUri, ContactsContract.Contacts.Photo.CONTENT_DIRECTORY);
-        Cursor cursor = context.getContentResolver().query(photoUri,
-                new String[]{ContactsContract.Contacts.Photo.PHOTO}, null, null, null);
-        if (cursor == null) {
-            return null;
-        }
-        try {
-            if (cursor.moveToFirst()) {
-                byte[] data = cursor.getBlob(0);
-                if (data != null) {
-                    return new ByteArrayInputStream(data);
-                }
-            }
-        } finally {
-            cursor.close();
-        }
-        return null;
+        Uri contact_uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI, String.valueOf(id));
+        return ContactsContract.Contacts.openContactPhotoInputStream(
+                context.getContentResolver(),
+                contact_uri,
+                true
+        );
     }
 
     public List<Contact> getContactsWithBirthdays()

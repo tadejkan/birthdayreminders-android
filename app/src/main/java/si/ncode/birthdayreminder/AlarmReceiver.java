@@ -3,14 +3,25 @@ package si.ncode.birthdayreminder;
 import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.net.Uri;
+import android.provider.ContactsContract;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.WakefulBroadcastReceiver;
 import android.widget.TextView;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -21,13 +32,15 @@ import java.util.List;
 public class AlarmReceiver extends WakefulBroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (MainActivity.is_open) return; //don't show notifications if UI is currently shown
+
         ContactRepository contact_repo = new ContactRepository(context);
         List<Contact> contacts = contact_repo.getContactsWithBirthdaysForNextDays(7);
 
-        showNotifications(context, contacts);
+        showNotifications(context, contacts, contact_repo);
     }
 
-    private void showNotifications(Context context, List<Contact> contacts)
+    private void showNotifications(Context context, List<Contact> contacts, ContactRepository contact_repository)
     {
         Calendar today = Calendar.getInstance();
 
@@ -41,11 +54,9 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
         );
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
-                .setSmallIcon(R.drawable.ic_event_note)
+                .setSmallIcon(R.drawable.ic_cake_black_48dp)
                 .setContentIntent(pending_intent)
-                .extend(
-                        new NotificationCompat.WearableExtender()
-                                .setContentIcon(R.drawable.ic_event_note));
+                .setColor(context.getResources().getColor(R.color.colorPrimary));
 
         if (contacts.size() == 1)
         {
@@ -59,6 +70,17 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
 
             builder.setContentTitle(title)
                 .setContentText(text);
+
+            builder.addPerson(ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI,
+                    Long.parseLong(contact.id)).toString());
+            InputStream photo_stream = contact_repository.getContactPhotoStream(contact.id);
+
+            Bitmap photo_bmp = (photo_stream == null ?
+                    BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_person_white) :
+                    BitmapFactory.decodeStream(photo_stream)
+            );
+
+            builder.setLargeIcon(getCircleBitmap(photo_bmp));
         }
         else
         {
@@ -92,7 +114,7 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
 
             builder.setContentTitle(context.getString(R.string.group_notification_title))
                 .setContentText(content)
-                .setStyle(inbox_style);
+                    .setStyle(inbox_style);
         }
 
         NotificationManager notification_manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -110,7 +132,30 @@ public class AlarmReceiver extends WakefulBroadcastReceiver {
         );
 
         alarm_manager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                AlarmManager.INTERVAL_HALF_HOUR,
+                AlarmManager.INTERVAL_FIFTEEN_MINUTES,
                 AlarmManager.INTERVAL_FIFTEEN_MINUTES, alarm_intent);
+    }
+
+    private Bitmap getCircleBitmap(Bitmap bitmap) {
+        final Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
+                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(output);
+
+        final int color = Color.RED;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        final RectF rectF = new RectF(rect);
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        canvas.drawOval(rectF, paint);
+
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+
+        bitmap.recycle();
+
+        return output;
     }
 }
